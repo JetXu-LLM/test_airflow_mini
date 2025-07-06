@@ -79,17 +79,38 @@ class LocalExecutor(BaseExecutor):
     
     def execute_dag(self, dag: DAG) -> Dict[str, Any]:
         """Execute an entire DAG locally."""
-        if not dag.validate_structure():
-            return {"success": False, "error": "Invalid DAG structure"}
+        # 使用 DAGValidator 进行验证
+        validator = DAGValidator(dag)  # 添加这个调用关系
+        if not validator.is_valid():
+            validation_report = validator.get_validation_report()  # 添加调用
+            return {
+                "success": False, 
+                "error": "Invalid DAG structure",
+                "validation_report": validation_report
+            }
         
         execution_start = datetime.now()
         task_results = {}
         
-        # Simple sequential execution for testing
+        # 使用 TaskRunner 执行任务
+        task_runner = TaskRunner(self)  # 添加这个关系
+        
         for task in dag.tasks:
             if not dag.is_paused():
-                result = self.execute_task(task)
-                task_results[task.node_id] = result
+                # 如果是 BaseOperator，使用其 execute 方法
+                if hasattr(task, 'execute'):
+                    try:
+                        task.pre_execute({})  # 添加调用关系
+                        context = {"execution_date": execution_start, "dag": dag}
+                        result = task.execute(context)
+                        task.post_execute(context, result)  # 添加调用关系
+                        task_results[task.node_id] = True
+                    except Exception as e:
+                        task_results[task.node_id] = False
+                else:
+                    # 普通 DAGNode 使用 TaskRunner
+                    result = task_runner.run_with_retry(task)  # 添加调用关系
+                    task_results[task.node_id] = result
         
         execution_end = datetime.now()
         
