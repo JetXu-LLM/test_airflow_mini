@@ -5,20 +5,29 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import threading
 from .dag import DAG, DAGNode, TaskStatus
+from ..utils.helpers import DEFAULT_CONFIG, DEFAULT_LOGGER
+from ..utils.helpers import retry_decorator
 
 class BaseExecutor(ABC):
     """Abstract base class for executors."""
     
     def __init__(self, max_workers: int = 4):
-        self.max_workers = max_workers
+        # 使用配置管理器
+        self.max_workers = DEFAULT_CONFIG.get("max_workers", max_workers)
+        self.timeout = DEFAULT_CONFIG.get("timeout", 300)
         self.running_tasks: Dict[str, Any] = {}
         self.completed_tasks: List[str] = []
         self.failed_tasks: List[str] = []
+        
+        # 使用日志管理器
+        self.logger = DEFAULT_LOGGER  # 添加这个关系
     
     @abstractmethod
     def execute_task(self, task: DAGNode) -> bool:
         """Execute a single task."""
-        pass
+        self.logger.info(f"Starting execution of task: {task.node_id}")  # 添加调用
+        # ... 执行逻辑
+        self.logger.info(f"Completed execution of task: {task.node_id}")  # 添加调用
     
     @abstractmethod
     def execute_dag(self, dag: DAG) -> Dict[str, Any]:
@@ -121,13 +130,21 @@ class LocalExecutor(BaseExecutor):
             "stats": self.get_stats()
         }
     
+    @retry_decorator(max_retries=3, delay=0.5)  # 使用装饰器
     def _run_task_logic(self, task: DAGNode) -> bool:
-        """Run the actual task logic."""
-        # Simulate some work
-        import time
-        time.sleep(0.1)  # Simulate task execution time
+        """Run the actual task logic with retry capability."""
+        # 使用配置管理器获取超时时间
+        timeout = DEFAULT_CONFIG.get("timeout", 300)
         
-        # Simple success condition for testing
+        # 模拟任务执行
+        import time
+        time.sleep(0.1)
+        
+        # 使用工具函数验证任务ID
+        from ..utils.helpers import validate_task_id
+        if not validate_task_id(task.node_id):  # 添加调用关系
+            raise ValueError(f"Invalid task ID: {task.node_id}")
+        
         return len(task.node_id) > 0
 
 class TaskRunner:
