@@ -35,6 +35,11 @@ class DAGNode:
         """Reset node status to pending."""
         self.status = TaskStatus.PENDING
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..operators.base_operator import BaseOperator
+
 class DAG(DAGNode):
     """Directed Acyclic Graph for workflow management."""
     
@@ -42,7 +47,7 @@ class DAG(DAGNode):
         super().__init__(dag_id, dag_id)
         self.description = description
         self.schedule_interval = schedule_interval
-        self.tasks: List[Union[DAGNode, BaseOperator]] = []
+        self.tasks: List[Union[DAGNode, 'BaseOperator']] = []
         self.dependencies: Dict[str, List[str]] = {}
         self._is_paused = False
     
