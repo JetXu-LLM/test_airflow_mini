@@ -78,6 +78,11 @@ class DAG(DAGNode):
         """Validate DAG structure for cycles."""
         validator = DAGValidator(self)
         return validator.is_valid()
+        
+    def to_visualization_data(self) -> Dict[str, Any]:
+        """Convert DAG to frontend visualization format."""
+        from ..utils.helpers import generate_dag_visualization_data
+        return generate_dag_visualization_data(self)  # 添加调用关系
 
 class DAGValidator:
     """Validator for DAG structure."""
