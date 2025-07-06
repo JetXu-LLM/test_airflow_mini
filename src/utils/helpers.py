@@ -7,6 +7,44 @@ from typing import Any, Dict, Callable, Optional, Union
 import json
 import os
 
+def generate_dag_visualization_data(dag: 'DAG') -> Dict[str, Any]:
+    """Generate data for frontend DAG visualization."""
+    from ..core.dag import DAG, TaskStatus
+    
+    nodes = []
+    edges = []
+    
+    # 转换任务为前端节点格式
+    for i, task in enumerate(dag.tasks):
+        nodes.append({
+            "id": task.node_id,
+            "name": task.name,
+            "status": task.status.value if hasattr(task.status, 'value') else 'pending',
+            "type": getattr(task, 'operator_type', {}).get('value', 'generic') if hasattr(task, 'operator_type') else 'generic',
+            "position": {"x": 100 + i * 200, "y": 100}
+        })
+    
+    # 转换依赖为边
+    edge_id = 0
+    for task_id, dependencies in dag.dependencies.items():
+        for dep_id in dependencies:
+            edges.append({
+                "id": f"edge_{edge_id}",
+                "source": dep_id,
+                "target": task_id,
+                "type": "dependency"
+            })
+            edge_id += 1
+    
+    return {
+        "dagId": dag.node_id,
+        "nodes": nodes,
+        "edges": edges,
+        "width": 800,
+        "height": 400,
+        "interactive": True
+    }
+
 def retry_decorator(max_retries: int = 3, delay: float = 1.0, 
                    backoff_factor: float = 2.0):
     """Decorator for retrying function calls."""
