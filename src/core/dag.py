@@ -1,7 +1,8 @@
 """DAG (Directed Acyclic Graph) implementation."""
 
 from datetime import datetime
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Union
+from ..operators.base_operator import BaseOperator
 from enum import Enum
 
 class TaskStatus(Enum):
@@ -41,7 +42,7 @@ class DAG(DAGNode):
         super().__init__(dag_id, dag_id)
         self.description = description
         self.schedule_interval = schedule_interval
-        self.tasks: List[DAGNode] = []
+        self.tasks: List[Union[DAGNode, BaseOperator]] = []
         self.dependencies: Dict[str, List[str]] = {}
         self._is_paused = False
     
