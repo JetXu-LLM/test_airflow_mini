@@ -1,2 +1,8 @@
-# test_airflow_mini
-test repo knowledge graph build by using a simple airflow like repo
+# Test Airflow Mini
+
+A minimal test repository for knowledge graph construction testing.
+
+## Features
+- DAG management
+- Task execution
+- Web interface
