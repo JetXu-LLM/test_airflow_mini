@@ -381,6 +381,62 @@ class TestRetryDecorator(unittest.TestCase):
 
 class TestIntegration(unittest.TestCase):
     """Integration test cases."""
+
+    def test_complete_workflow_with_config(self):
+        """Test complete workflow using configuration and logging."""
+        from src.utils.helpers import ConfigManager, DEFAULT_LOGGER
+        
+        # 使用配置管理器
+        config = ConfigManager()
+        config.set("max_workers", 2)
+        config.set("timeout", 600)
+        
+        # 创建 DAG
+        dag = create_dag("config_test_dag", "Config Test DAG")
+        
+        # 创建带配置的执行器
+        executor = LocalExecutor(max_workers=config.get("max_workers"))
+        
+        # 添加日志记录的任务
+        def logged_task():
+            DEFAULT_LOGGER.info("Executing logged task")  # 添加调用关系
+            return "Task with logging completed"
+        
+        python_op = PythonOperator(
+            task_id="logged_python_task",
+            python_callable=logged_task
+        )
+        
+        dag.add_task(python_op)
+        
+        # 生成可视化数据
+        viz_data = dag.to_visualization_data()  # 添加调用关系
+        self.assertIn("dagId", viz_data)
+        self.assertIn("nodes", viz_data)
+        
+        # 执行 DAG
+        result = executor.execute_dag(dag)
+        self.assertTrue(result["success"])
+
+    def test_datetime_utilities_integration(self):
+        """Test datetime utility functions integration."""
+        from src.utils.helpers import format_datetime, parse_datetime, calculate_duration
+        
+        # 创建任务并使用时间工具
+        task = DAGNode("time_test_task")
+        
+        # 格式化创建时间
+        formatted_time = format_datetime(task.created_at)  # 添加调用关系
+        self.assertIsInstance(formatted_time, str)
+        
+        # 解析时间
+        parsed_time = parse_datetime(formatted_time)  # 添加调用关系
+        self.assertIsInstance(parsed_time, datetime)
+        
+        # 计算持续时间
+        end_time = datetime.now()
+        duration = calculate_duration(task.created_at, end_time)  # 添加调用关系
+        self.assertIn("total_seconds", duration)
     
     def test_complete_workflow(self):
         """Test complete workflow from DAG creation to execution."""
